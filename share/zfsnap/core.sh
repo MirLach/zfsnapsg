@@ -4,8 +4,8 @@
 # See the AUTHORS and LICENSE files for more information.
 #
 # website:          http://www.zfsnap.org
-# repository:       https://github.com/zfsnap/zfsnap
-# bug tracking:     https://github.com/zfsnap/zfsnap/issues
+# repository:       https://github.com/MirLach/zfsnapsg
+# bug tracking:     https://github.com/MirLach/zfsnapsg/issues
 
 # Put zsh in POSIX mode
 [ -n "${ZSH_VERSION-}" ] && emulate -R sh
@@ -415,6 +415,20 @@ TrimToSnapshotName() {
     fi
 }
 
+# Retvals the snapshot name (everything after the '@')
+# ZFS reserves '@' to deliminate snapshots. At max, there will be one per dataset.
+# If no valid snapshot name is found, it will return 1.
+TrimToSnapshotNameSG() {
+    local snapshot="$1"
+    local snapshot_name="${snapshot##*@}"
+
+    if ValidSnapshotNameSG "$snapshot_name"; then
+        RETVAL=$snapshot_name && return 0
+    else
+        RETVAL='' && return 1
+    fi
+}
+
 # Retvals the TTL (anything after the last '--')
 # If no valid TTL is found, it will return 1.
 TrimToTTL() {
@@ -423,6 +437,18 @@ TrimToTTL() {
 
     if ValidTTL "$ttl"; then
         RETVAL=$ttl && return 0
+    else
+        RETVAL='' && return 1
+    fi
+}
+# Retvals the SG (anything after the last '--')
+# If no valid SG (Snapshot Group) is found, it will return 1.
+TrimToSG() {
+    local snapshot="$1"
+    local sg="${snapshot##*--}"
+
+    if ValidSG "$sg"; then
+        RETVAL=$sg && return 0
     else
         RETVAL='' && return 1
     fi
@@ -462,6 +488,20 @@ ValidSnapshotName() {
     [ "$rebuilt_name" = "$snapshot_name" ] && return 0 || return 1
 }
 
+# Returns 0 if it's a snapshot name that matches zfsnap's name pattern
+# This also filters for any prefixes in effect
+ValidSnapshotNameSG() {
+    IsSnapshot "$1" && return 1
+    local snapshot_name="$1"
+
+    TrimToPrefix "$snapshot_name" && local snapshot_prefix="$RETVAL" || return 1
+    TrimToDate "$snapshot_name" && local snapshot_date="$RETVAL" || return 1
+    TrimToSG "$snapshot_name" && local snapshot_ttl="$RETVAL" || return 1
+
+    local rebuilt_name="${snapshot_prefix}${snapshot_date}--${snapshot_ttl}"
+    [ "$rebuilt_name" = "$snapshot_name" ] && return 0 || return 1
+}
+
 # Check validity of TTL
 ValidTTL() {
     local ttl="$1"
@@ -482,6 +522,23 @@ ValidTTL() {
               *) return 1 ;;
         esac
     done
+
+    return 0
+}
+
+
+# Check validity of SG (Snapshot Group)
+# as created from crontab:
+# Minutely, Hourly, daily, weekly, monthly, yearly
+ValidSG() {
+    local sg="$1"
+
+    [ -z "$sg" ] && return 1
+
+    case "$sg" in
+        M|H|d|w|m|y) return 0 ;;
+        *) return 1 ;;
+    esac
 
     return 0
 }

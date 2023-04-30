@@ -32,8 +32,8 @@ OPTIONS:
 
 LINKS:
   website:          http://www.zfsnap.org
-  repository:       https://github.com/zfsnap/zfsnap
-  bug tracking:     https://github.com/zfsnap/zfsnap/issues
+  repository:       https://github.com/MirLach/zfsnapsg
+  bug tracking:     https://github.com/MirLach/zfsnapsg/issues
 
 EOF
     Exit 0

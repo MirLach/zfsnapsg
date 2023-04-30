@@ -15,6 +15,9 @@ ${0##*/} snapshot [ options ] zpool/filesystem ...
 
 OPTIONS:
   -a ttl       = How long the snapshot(s) should be kept (default: 1 month)
+  -g sg        = Snapshot group: M, H, d, w, m for Minutely, Hourly .. to monthy, yearly.
+                 Cannot be used together with -a ttl,
+                 you must use only one type of getting / expiring / destroying snapshots
   -h           = Print this help and exit
   -n           = Dry-run. Perform a trial run with no actions actually performed
   -p prefix    = Prefix to use when naming snapshots for all ZFS file
@@ -32,8 +35,8 @@ OPTIONS:
 
 LINKS:
   website:          http://www.zfsnap.org
-  repository:       https://github.com/zfsnap/zfsnap
-  bug tracking:     https://github.com/zfsnap/zfsnap/issues
+  repository:       https://github.com/MirLach/zfsnapsg
+  bug tracking:     https://github.com/MirLach/zfsnapsg/issues
 
 EOF
     Exit 0
@@ -42,10 +45,14 @@ EOF
 # main loop; get options, process snapshot creation
 while [ "$1" ]; do
     OPTIND=1
-    while getopts :a:hnp:PrRsSvz OPT; do
+    while getopts :a:g:hnp:PrRsSvz OPT; do
         case "$OPT" in
             a) ValidTTL "$OPTARG" || Fatal "Invalid TTL: $OPTARG"
                TTL=$OPTARG
+               ;;
+            g) ValidSG "$OPTARG" || Fatal "Invalid Snapshot Group: $OPTARG"
+               TTL=$OPTARG
+               # ToDo: Fatal "Invalid options: cannot use -a and -g together"
                ;;
             h) Help;;
             n) DRY_RUN='true';;
